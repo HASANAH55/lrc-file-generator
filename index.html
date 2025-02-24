@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAILWINDCSS</title>
+  <style>
+    ::-webkit-scrollbar {
+      width: 10px;
+      border: 1px solid azure;
+      background-color: #adc1c1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+    }
+  </style>
+</head>
+<body class="z-0 bg-cyan-200">
+  <div class="container mx-auto mt-16 bg-cyan-100 h-[450px] w-[700px] rounded-2xl border-4 border-white shadow-2xl">
+    <div class="bg-white mt-6 mx-[100px] h-20 flex flex-row rounded-2xl overflow-hidden">
+      <label for="song" id="uploadbutton" class="w-[25%] bg-blue-500"><img src="images/upload-img.svg" class="select-none w-[90%] h-[85%] m-[5%] my-[7.5%]"></label>
+      <input type="file" name="file" id="song" class="hidden" accept="audio/*">
+      <div class="w-[75%] px-[12px] flex " id="song-shower"></div>
+    </div>
+    <div id="lyricscontainer" class="mx-[50px] h-[250px] my-[50px] bg-white rounded-xl text-2xl text-wrap overflow-hidden">
+      <textarea id="lyrics" class="resize-none h-[100%] w-[100%] outline-0 text-start p-2 caret-cyan-500"></textarea>
+    </div>
+  </div>
+    <button id="sync" class="h-15 w-[30%] mx-[35%] bg-blue-400 mt-4 text-white text-2xl md:hidden sm:block">Sync</button>
+  <!--This is savejs library-->
+  <script src="save.js"></script>
+  <script>
+    let sync = document.getElementById('sync');
+    let songshower = document.getElementById('song-shower');
+    let uploadbutton = document.getElementById('uploadbutton');
+    let song = document.getElementById('song');
+    let lyrics = document.getElementById('lyricscontainer');
+    let playbutton = false;
+    let thereissong = false;
+    let syncbutton = false;
+    let ael = true;
+    let array = [];
+    let coloredlines = 0;
+    let lineindex = 0;
+    let currenttime = 0;
+    let index = 0;
+    let interval;
+    let audio;
+    function checking(){
+      if(!playbutton&&!thereissong){
+        checkingsong();
+      }
+      if(playbutton&&!thereissong){
+        console.log('xd');
+        ael = true;
+        start();
+      }
+    }
+    function filling(){
+      for(let i=0;i<149;i++){
+        let element = document.createElement('div');
+        let r = Math.floor(Math.random()*50)+5;
+        if(i==0){element.style.marginLeft = '1px';}
+        element.classList = `h-[${r}px] w-[1px] mr-[1px] my-[${(80-r)/2}px] bg-blue-400`;
+        songshower.appendChild(element);
+      }
+    }
+    function waitingsong(){
+      let x = new Promise((resolve, reject) => {
+        let z = setInterval(() => {
+          if(song.files.length>0){
+            clearInterval(z);
+            resolve();
+          }
+        }, 100);
+      });
+      return x;
+    } 
+    async function checkingsong(){
+      await waitingsong();
+      console.log('x');
+      filling();
+      uploadbutton.firstChild.src = 'images/play.svg';
+      playbutton = true;
+      console.log(playbutton);
+      uploadbutton.removeAttribute("for");
+    }
+    function start(){
+      audio = new Audio(URL.createObjectURL(song.files[0]));
+      thereissong = true;
+      let wantedtime;
+      slicelines();
+      audio.play();
+      audio.addEventListener('loadedmetadata', ()=>{
+        wantedtime = Math.round(audio.duration*100);
+        console.log(wantedtime);
+      });
+      interval = setInterval(() => {
+        currenttime++;
+        colorlines(currenttime,wantedtime);
+        if(currenttime==wantedtime){end();}
+      }, 10);
+      syncbutton = true;
+      document.addEventListener('keydown',value=>{
+        if(value.code == 'Space'&&ael){
+          let time2 = `${currenttime}`;
+          time2=time2.padStart(6,"0");
+          savenewline(time2,index);
+          index++;
+        }
+      });
+    }
+    function syncfun(){
+      if(syncbutton){
+        let time2 = `${currenttime}`;
+        time2=time2.padStart(6,"0");
+        savenewline(time2,index);
+        index++;
+      }
+    }
+    function slicelines(){
+      let lyrics = '';
+      lyrics = document.getElementById('lyrics').value;
+      let array = [];
+      let x = true;
+      while(x){
+        let y = lyrics.indexOf('\n');
+        if(y == -1){
+          array.push(lyrics);
+          console.log(array);
+          filllyrics(array);
+          x=false;
+        }
+        else{
+          array.push(lyrics.slice(0,y));
+          lyrics = lyrics.slice(y+1,lyrics.length);
+        }
+      }
+    }
+    function filllyrics(array){
+      let lyricsparent = document.getElementById('lyrics').parentElement;
+      lyricsparent.removeChild(document.getElementById('lyrics'));
+      lyricsparent.classList += ' p-2 select-none';
+      for(let i=0;i<array.length;i++){
+        let element = document.createElement('div');
+        element.textContent = array[i];
+        element.id = 'text'+i;
+        lyricsparent.appendChild(element);
+      }
+      window.location.href = "#text0";
+    }
+    function savenewline(time,index){
+      let timer = `[${time.slice(0,2)}:${time.slice(2,4)}:${time.slice(4,6)}]`;
+      if(index >= lyrics.children.length){end();return;}
+      if(index>=lyrics.children.length){
+        console.log(array);
+        return;
+      }
+      array.push(timer+lyrics.children[index].textContent+' \n');
+      if(index !=0){
+        lyrics.children[index-1].classList = ' ';
+      }
+      lyrics.children[index].classList = 'bg-gray-100 text-blue-300';
+      window.location.href = "#text"+index;
+    }  
+    function colorlines(duration,song){
+      let array2 = [];
+      let x=songshower.children;
+      for(let i=1;i<=100;i++){
+        let one = song/100;
+        array2.push(Math.round(one*i))
+      }
+      if(duration>array2[lineindex]){
+        x[coloredlines].classList += 'b bg-amber-500';
+        lineindex++;
+        coloredlines++;
+        if(duration%2==0){
+          x[coloredlines].classList += 'b bg-amber-500';
+          coloredlines++;
+        }
+      }
+    }
+    function end(){
+      console.log(audio);
+      audio.pause();
+      clearInterval(interval);
+      songshower.innerHTML = "";
+      uploadbutton.firstChild.src = 'images/upload-img.svg';
+      uploadbutton.setAttribute("for","song");
+      playbutton = false;
+      song.value = "";
+      lyricscontainer.innerHTML = '<textarea id="lyrics" class="resize-none h-[100%] w-[100%] outline-0 text-start p-2 caret-cyan-500"></textarea>';
+      save(array);
+      array = [];
+      thereissong = false;
+      ael = false;
+      syncbutton = false;
+      currenttime = 0;
+      index = 0;
+    }
+    function save(array){
+      const blob = new Blob(array, { type: "text/plain" });
+      saveAs(blob, "lyrics.lrc");
+    }
+    uploadbutton.onclick = checking;
+    sync.onclick = syncfun;
+  </script>
+  <script src="tailwindfast.js"></script>
+</body>
+</html>
